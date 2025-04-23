@@ -23,6 +23,7 @@ const VerificationReportPage: React.FC = () => {
   const [data, setData] = useState<VerificationResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  
 
   useEffect(() => {
     const fetchVerificationData = async () => {

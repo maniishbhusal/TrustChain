@@ -24,9 +24,9 @@ export const routes = createBrowserRouter([
         element: <ProtectedRoute redirectPath="/login" />,
         children: [
           // { path: "/profile", element: <ProfilePage /> },
+          { path: "/verification/:verification_id", element:  <VerificationReportPage /> },
         ],
       },
-      { path: "/verification/:verification_id", element:  <VerificationReportPage /> }
     ],
   },
 ]);

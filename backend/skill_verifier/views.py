@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 import json
+import hashlib
+from django.core.cache import cache
 
 from .github_service import GitHubService
 from .resume_parser import ResumeParser
@@ -22,9 +24,18 @@ class VerifySkillsView(APIView):
         
         resume_file = request.FILES['resume_pdf']
         
+        # Check if we already have a cached full response for this combination
+        parser = ResumeParser()
+        pdf_hash = parser._generate_pdf_hash(resume_file)
+        full_cache_key = f"full_verification_{github_username}_{pdf_hash}"
+        cached_response = cache.get(full_cache_key)
+        
+        if cached_response is not None:
+            print(f"Cache hit for full verification: {full_cache_key}")
+            return Response(cached_response, status=status.HTTP_200_OK)
+        
         try:
             # Step 1: Parse resume PDF
-            parser = ResumeParser()
             resume_data = parser.parse_resume(resume_file)
             resume_skills = resume_data['skills']
             
@@ -55,15 +66,21 @@ class VerifySkillsView(APIView):
                 hash_value=hash_value
             )
             
-            # Return results
-            return Response({
+            # Prepare response
+            response_data = {
                 "github_username": github_username,
                 "resume_skills": resume_skills,
                 "github_skills": github_skills,
                 "verification_result": verification_result,
                 "hash": hash_value,
                 "verification_id": verification.id
-            }, status=status.HTTP_200_OK)
+            }
+            
+            # Cache the full response
+            cache.set(full_cache_key, response_data, settings.VERIFICATION_CACHE_TIMEOUT)
+            
+            # Return results
+            return Response(response_data, status=status.HTTP_200_OK)
             
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -82,3 +99,9 @@ class GetVerificationView(APIView):
             }, status=status.HTTP_200_OK)
         except SkillVerification.DoesNotExist:
             return Response({"error": "Verification not found"}, status=status.HTTP_404_NOT_FOUND)
+
+# Add a new view to clear the cache for testing purposes
+class ClearCacheView(APIView):
+    def post(self, request):
+        cache.clear()
+        return Response({"message": "Cache cleared successfully"}, status=status.HTTP_200_OK)

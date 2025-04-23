@@ -131,3 +131,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # API Keys and Configuration
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'trustchain-cache',
+    }
+}
+
+# Cache timeouts in seconds
+GITHUB_CACHE_TIMEOUT = 60 * 30  # 30 minutes
+VERIFICATION_CACHE_TIMEOUT = 6

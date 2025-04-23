@@ -2,14 +2,39 @@ import openai
 from django.conf import settings
 import hashlib
 import json
+from django.core.cache import cache
 
 class SkillAnalyzer:
     def __init__(self):
         self.openai_api_key = settings.OPENAI_API_KEY
         openai.api_key = self.openai_api_key
     
+    def _get_cache_key(self, method_name, *args):
+        """Generate a cache key based on method name and arguments"""
+        key_parts = [method_name]
+        for arg in args:
+            if isinstance(arg, (list, dict)):
+                key_parts.append(hashlib.md5(json.dumps(arg, sort_keys=True).encode()).hexdigest())
+            else:
+                key_parts.append(str(arg))
+        key = "_".join(key_parts)
+        # Create a hash for long keys
+        if len(key) > 250:
+            key = f"skill_{hashlib.md5(key.encode()).hexdigest()}"
+        return key
+    
     def analyze_github_skills(self, github_data):
-        """Use AI to analyze GitHub data and extract skills"""
+        """Use AI to analyze GitHub data and extract skills with caching"""
+        # Create cache key based on essential GitHub data
+        cache_key = self._get_cache_key("github_skills_analysis", 
+                                        github_data['username'],
+                                        [repo['name'] for repo in github_data['repos']])
+        cached_skills = cache.get(cache_key)
+        
+        if cached_skills is not None:
+            print(f"Cache hit: {cache_key}")
+            return cached_skills
+            
         # Prepare a condensed version of the GitHub data to fit within token limits
         condensed_data = {
             'username': github_data['username'],
@@ -58,16 +83,27 @@ class SkillAnalyzer:
                 skills = eval(skills_text)
                 if not isinstance(skills, list):
                     skills = []
+                    
+                # Cache the result
+                cache.set(cache_key, skills, settings.VERIFICATION_CACHE_TIMEOUT)
+                return skills
             except:
                 print("Error parsing AI response to JSON")
-                
-            return skills
+                return []
         except Exception as e:
             print(f"Error using OpenAI API: {e}")
             return []
     
     def verify_skills_with_llm(self, resume_skills, github_skills):
-        """Use LLM to intelligently compare resume skills with GitHub skills"""
+        """Use LLM to intelligently compare resume skills with GitHub skills, with caching"""
+        # Create cache key based on resume skills and GitHub skills
+        cache_key = self._get_cache_key("verify_skills_llm", resume_skills, github_skills)
+        cached_result = cache.get(cache_key)
+        
+        if cached_result is not None:
+            print(f"Cache hit: {cache_key}")
+            return cached_result
+        
         prompt = f"""
         I need to compare skills claimed in a resume with skills demonstrated on GitHub.
         
@@ -118,12 +154,15 @@ class SkillAnalyzer:
                             result[key] = "No explanation provided"
                         else:
                             result[key] = [] if 'skills' in key else 0
+                
+                # Cache the result
+                cache.set(cache_key, result, settings.VERIFICATION_CACHE_TIMEOUT)
+                return result
             except Exception as e:
                 print(f"Error parsing AI verification response: {e}")
                 # Fallback to basic verification
                 result = self.basic_skill_verification(resume_skills, github_skills)
-                
-            return result
+                return result
         except Exception as e:
             print(f"Error using OpenAI API for verification: {e}")
             # Fallback to basic verification

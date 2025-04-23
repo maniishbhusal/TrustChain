@@ -8,6 +8,8 @@ import LoggedOutView from "@/components/Home/LoggedOutView";
 import { Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import ResumeUploadForm from "@/components/ResumeUploadForm";
+// import ResumeUploadForm from "../..//components/ResumeUploadForm";
 
 const HomePage = () => {
   const { isLoggedIn, userDetails } = useLogin();
@@ -52,21 +54,7 @@ const HomePage = () => {
               {isRegistered ? (
                 <UploadPanel />
               ) : (
-                <div className="border rounded-md p-4 flex flex-col gap-6 items-center">
-                  <span>
-                    Register as a Content Creator to upload your content on
-                    TrustChain.
-                  </span>
-                  <Button onClick={handleRegisterNowClick}>Register now</Button>
-                  <Dialog
-                    open={isProfileDialogOpen}
-                    onOpenChange={setIsProfileDialogOpen}
-                  >
-                    {/* <DialogContent className="sm:max-w-md">
-                      <CreateProfile />
-                    </DialogContent> */}
-                  </Dialog>
-                </div>
+               <ResumeUploadForm/>
               )}
             </>
           ) : (
@@ -85,6 +73,7 @@ const HomePage = () => {
           </div>
         )}
       </div>
+
     </div>
   );
 };

@@ -36,10 +36,10 @@ class VerifySkillsView(APIView):
             analyzer = SkillAnalyzer()
             github_skills = analyzer.analyze_github_skills(github_data)
             
-            # Step 4: Verify skills
-            verification_result = analyzer.verify_skills(resume_skills, github_skills)
+            # Step 4: Verify skills using LLM for intelligent comparison
+            verification_result = analyzer.verify_skills_with_llm(resume_skills, github_skills)
             
-            # Step 5: Generate verification hash
+            # Step 5: Generate verification hash based on verified skills
             hash_value = analyzer.generate_verification_hash(
                 github_username, 
                 verification_result['verified_skills']

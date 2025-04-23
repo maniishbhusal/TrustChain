@@ -66,13 +66,76 @@ class SkillAnalyzer:
             print(f"Error using OpenAI API: {e}")
             return []
     
-    def verify_skills(self, resume_skills, github_skills):
-        """Compare skills from resume with skills from GitHub"""
+    def verify_skills_with_llm(self, resume_skills, github_skills):
+        """Use LLM to intelligently compare resume skills with GitHub skills"""
+        prompt = f"""
+        I need to compare skills claimed in a resume with skills demonstrated on GitHub.
+        
+        Resume skills: {json.dumps(resume_skills)}
+        GitHub skills: {json.dumps(github_skills)}
+        
+        Please analyze these skills and identify:
+        1. Which resume skills are verified by GitHub (considering variations in naming, e.g., "React.js" and "React" are the same)
+        2. Which resume skills could not be verified on GitHub
+        3. Which additional skills were found on GitHub but not mentioned in the resume
+        4. Calculate a verification percentage (verified skills / total resume skills)
+        
+        Consider that some technologies may be related or nested:
+        - "HTML & CSS" relates to both "HTML" and "CSS"
+        - "Express.js" is the same as "Express"
+        - "React.js" is the same as "React"
+        - "Tailwind CSS" relates to "CSS" but is more specific
+
+        Return your analysis as a JSON object with these keys:
+        - verified_skills: array of verified skills (use the resume's naming)
+        - unverified_skills: array of skills from the resume not verified
+        - additional_skills: array of skills found on GitHub but not in resume
+        - verification_percentage: percentage of resume skills verified (0-100)
+        - explanation: brief text explaining your reasoning
+        """
+        
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a skill verification assistant that outputs JSON with reasoning."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            result_text = response.choices[0].message.content.strip()
+            
+            # Clean up the response to ensure it's valid JSON
+            result_text = result_text.replace("```json", "").replace("```", "").strip()
+            result = {}
+            
+            try:
+                result = json.loads(result_text)
+                # Ensure all required keys exist
+                required_keys = ['verified_skills', 'unverified_skills', 'additional_skills', 'verification_percentage', 'explanation']
+                for key in required_keys:
+                    if key not in result:
+                        if key == 'explanation':
+                            result[key] = "No explanation provided"
+                        else:
+                            result[key] = [] if 'skills' in key else 0
+            except Exception as e:
+                print(f"Error parsing AI verification response: {e}")
+                # Fallback to basic verification
+                result = self.basic_skill_verification(resume_skills, github_skills)
+                
+            return result
+        except Exception as e:
+            print(f"Error using OpenAI API for verification: {e}")
+            # Fallback to basic verification
+            return self.basic_skill_verification(resume_skills, github_skills)
+    
+    def basic_skill_verification(self, resume_skills, github_skills):
+        """Basic fallback method for skill verification"""
         # Convert to lowercase for case-insensitive comparison
         resume_skills_lower = [skill.lower() for skill in resume_skills]
         github_skills_lower = [skill.lower() for skill in github_skills]
         
-        # Find common skills
+        # Find common skills (this is a simple approach as fallback)
         common_skills = list(set(resume_skills_lower) & set(github_skills_lower))
         
         # Skills in resume but not found in GitHub
@@ -85,12 +148,13 @@ class SkillAnalyzer:
             'verified_skills': common_skills,
             'unverified_skills': unverified_skills,
             'additional_skills': additional_skills,
-            'verification_percentage': len(common_skills) / len(resume_skills) * 100 if resume_skills else 0
+            'verification_percentage': len(common_skills) / len(resume_skills) * 100 if resume_skills else 0,
+            'explanation': "Basic comparison performed. This is a fallback method."
         }
     
     def generate_verification_hash(self, github_username, verified_skills):
         """Generate a hash of verified skills that can be stored on blockchain"""
-        skills_string = ",".join(sorted(verified_skills))
+        skills_string = ",".join(sorted([skill.lower() for skill in verified_skills]))
         data_to_hash = f"{github_username}:{skills_string}:{settings.SECRET_KEY}"
         hash_object = hashlib.sha256(data_to_hash.encode())
         return hash_object.hexdigest()

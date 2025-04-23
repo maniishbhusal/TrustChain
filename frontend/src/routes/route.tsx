@@ -4,6 +4,7 @@ import HomePage from "../pages/HomePage";
 import Layout from "../layout/Layout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
+import VerificationReportPage from "@/pages/VerificationReportPage";
 
 export const routes = createBrowserRouter([
   {
@@ -25,6 +26,7 @@ export const routes = createBrowserRouter([
           // { path: "/profile", element: <ProfilePage /> },
         ],
       },
+      { path: "/verification/:verification_id", element:  <VerificationReportPage /> }
     ],
   },
 ]);

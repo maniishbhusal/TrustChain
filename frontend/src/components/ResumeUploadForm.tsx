@@ -1,6 +1,7 @@
 import React, { useState, useRef, ChangeEvent, DragEvent } from "react";
 import { Upload, CheckCircle, X, File, FileText, Loader } from "lucide-react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 interface VerificationResponse {
   github_username: string;
@@ -23,6 +24,7 @@ const ResumeUploadForm: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const navigate = useNavigate();
 
   const handleFile = (selectedFile: File | null) => {
     setError("");
@@ -91,13 +93,15 @@ const ResumeUploadForm: React.FC = () => {
         }
       );
       
-      // Log the response to console as requested
+      // Log the response to console
       console.log('API Response:', response.data);
       
-      // You could also set this to state if you want to display it
-      // setVerificationResult(response.data);
-      
       setIsSubmitting(false);
+      
+      // Redirect to verification report page
+      if (response.data && response.data.verification_id) {
+        navigate(`/verification/${response.data.verification_id}`);
+      }
     } catch (err) {
       setIsSubmitting(false);
       if (axios.isAxiosError(err)) {

@@ -88,12 +88,12 @@ DATABASES = {
     }
 }
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://localhost:8000"
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:8000"
+]
 
-CORS_ALLOW_ALL_ORIGINS: bool
+# CORS_ALLOW_ALL_ORIGINS: bool
 
 
 # Password validation

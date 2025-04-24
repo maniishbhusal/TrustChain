@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { CheckCircle, XCircle, AlertCircle, ChevronRight, Github, Download, ArrowLeft } from "lucide-react";
-import axios from "axios";
-import { useParams, Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { fetchFromWalrus } from "@/services/walrusService";
 
 interface VerificationResponse {
@@ -16,7 +15,8 @@ interface VerificationResponse {
     explanation: string;
   };
   hash: string;
-  created_at: string;
+  created_at?: string;
+  verification_id: number;
 }
 
 const VerificationReportPage: React.FC = () => {
@@ -24,11 +24,11 @@ const VerificationReportPage: React.FC = () => {
   const [data, setData] = useState<VerificationResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
-  
 
   useEffect(() => {
     const fetchVerificationData = async () => {
       try {
+        // get 
         const storedBlobObject = localStorage.getItem('blobObject');
 
         if (storedBlobObject) {
@@ -36,26 +36,28 @@ const VerificationReportPage: React.FC = () => {
           const blobId = blobObject?.blobId;
         
           if (blobId) {
-            console.log('blob id output:', fetchFromWalrus(blobId));
+            const fetchedData = await fetchFromWalrus(blobId);
+            console.log('Fetched blob content:', fetchedData);
+            
+            // Parse the fetched data if it's a string
+            const parsedData = typeof fetchedData === 'string' ? JSON.parse(fetchedData) : fetchedData;
+            
+            // Add current date as created_at if it doesn't exist
+            if (!parsedData.created_at) {
+              parsedData.created_at = new Date().toISOString();
+            }
+            
+            setData(parsedData);
+            setLoading(false);
           } else {
-            console.warn('blobId not found in stored blobObject.');
+            throw new Error('blobId not found in stored blobObject');
           }
         } else {
-          console.warn('No blobObject found in localStorage.');
+          throw new Error('No blobObject found in localStorage');
         }
-        
-        const response = await axios.get<VerificationResponse>(
-          `http://127.0.0.1:8000/api/verification/${verification_id}/`
-        );
-        setData(response.data);
-        setLoading(false);
       } catch (err) {
         setLoading(false);
-        if (axios.isAxiosError(err)) {
-          setError(`Failed to load report: ${err.response?.data?.message || err.message}`);
-        } else {
-          setError("An unexpected error occurred. Please try again.");
-        }
+        setError(`Failed to load report: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     };
 
@@ -162,7 +164,7 @@ const VerificationReportPage: React.FC = () => {
                 Resume Skills Verification
               </h1>
               <p className="text-gray-400 mt-1">
-                Verification Report #{verification_id} • {formatDate(data.created_at)}
+                Verification Report #{data.verification_id} • {data.created_at ? formatDate(data.created_at) : "Today"}
               </p>
             </div>
             <div className="mt-4 md:mt-0 flex items-center">

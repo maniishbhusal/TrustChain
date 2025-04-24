@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CheckCircle, XCircle, AlertCircle, ChevronRight, Github, Download, ArrowLeft } from "lucide-react";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
+import { fetchFromWalrus } from "@/services/walrusService";
 
 interface VerificationResponse {
   github_username: string;
@@ -28,6 +29,21 @@ const VerificationReportPage: React.FC = () => {
   useEffect(() => {
     const fetchVerificationData = async () => {
       try {
+        const storedBlobObject = localStorage.getItem('blobObject');
+
+        if (storedBlobObject) {
+          const blobObject = JSON.parse(storedBlobObject);
+          const blobId = blobObject?.blobId;
+        
+          if (blobId) {
+            console.log('blob id output:', fetchFromWalrus(blobId));
+          } else {
+            console.warn('blobId not found in stored blobObject.');
+          }
+        } else {
+          console.warn('No blobObject found in localStorage.');
+        }
+        
         const response = await axios.get<VerificationResponse>(
           `http://127.0.0.1:8000/api/verification/${verification_id}/`
         );

@@ -2,6 +2,7 @@ import React, { useState, useRef, ChangeEvent, DragEvent } from "react";
 import { Upload, CheckCircle, X, File, FileText, Loader } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { uploadToWalrus } from "@/services/walrusService";
 
 interface VerificationResponse {
   github_username: string;
@@ -78,11 +79,11 @@ const ResumeUploadForm: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      
+
       const formData = new FormData();
       formData.append('resume_pdf', file);
       formData.append('github_username', 'shresthanirjala'); // Default value as requested
-      
+
       const response = await axios.post<VerificationResponse>(
         'http://127.0.0.1:8000/api/verify-skills/',
         formData,
@@ -92,12 +93,22 @@ const ResumeUploadForm: React.FC = () => {
           },
         }
       );
-      
+
       // Log the response to console
       console.log('API Response:', response.data);
-      
+     const walrusResponse = await uploadToWalrus(JSON.stringify(response.data))
+      const blobObject = walrusResponse?.newlyCreated?.blobObject;
+
+      if (blobObject) {
+        localStorage.setItem('blobObject', JSON.stringify(blobObject));
+      } else {
+        console.warn('No blobObject found in response');
+      }
+
+
+
       setIsSubmitting(false);
-      
+
       // Redirect to verification report page
       if (response.data && response.data.verification_id) {
         navigate(`/verification/${response.data.verification_id}`);
@@ -131,11 +142,10 @@ const ResumeUploadForm: React.FC = () => {
       </div>
 
       <div
-        className={`relative border-2 border-dashed rounded-xl p-8 transition-all ${
-          dragActive
+        className={`relative border-2 border-dashed rounded-xl p-8 transition-all ${dragActive
             ? "border-blue-500 bg-blue-900/20"
             : "border-gray-700 hover:border-blue-400"
-        } ${file ? "bg-blue-900/10" : ""}`}
+          } ${file ? "bg-blue-900/10" : ""}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
@@ -203,11 +213,10 @@ const ResumeUploadForm: React.FC = () => {
         <button
           onClick={handleSubmit}
           disabled={!file || isSubmitting}
-          className={`w-full py-3 rounded-lg font-medium transition-all ${
-            file && !isSubmitting
+          className={`w-full py-3 rounded-lg font-medium transition-all ${file && !isSubmitting
               ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30"
               : "bg-gray-800 text-gray-400 cursor-not-allowed"
-          }`}
+            }`}
         >
           {isSubmitting ? (
             <div className="flex items-center justify-center">

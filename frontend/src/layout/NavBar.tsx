@@ -15,7 +15,7 @@ import { useLogin } from "@/context/UserContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { getBalance } from "@/services/commonServices";
 import CopyButton from "@/components/CopyButton";
-import LogoImg from "../assets/image.png";
+import LogoImg from "../assets/logo.jpeg";
 
 const Navbar = () => {
   // const { toggleChat } = useContext(ChatContext);

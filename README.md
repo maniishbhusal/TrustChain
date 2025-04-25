@@ -2,7 +2,7 @@
 
 **TrustChain** helps you prove your real-world skills (like coding!) through AI analysis and blockchain-backed proof. Upload your resume, and get a verified skill report—simple, honest, and trusted.
 
-🎥 [Watch Demo Video](https://your-demo-video-link.com)
+🎥 [Watch Demo Video](https://youtu.be/vqRDQAUKhoQ)
 
 ---
 
